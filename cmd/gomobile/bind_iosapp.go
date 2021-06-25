@@ -7,6 +7,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -14,6 +15,20 @@ import (
 
 	"golang.org/x/tools/go/packages"
 )
+
+func overrideSymlink(src, dest string) error {
+	if _, err := os.Lstat(dest); err == nil {
+		os.Remove(dest)
+	} else if !os.IsNotExist(err) {
+		return err
+	}
+
+	if err := symlink(src, dest); err != nil {
+		return err
+	}
+
+	return nil
+}
 
 func goIOSBind(gobind string, pkgs []*packages.Package, archs []string) error {
 	// Run gobind to generate the bindings
@@ -125,13 +140,13 @@ func goIOSBind(gobind string, pkgs []*packages.Package, archs []string) error {
 			if err := mkdir(headers); err != nil {
 				return err
 			}
-			if err := symlink("A", buildTemp+"/Versions/Current"); err != nil {
+			if err := overrideSymlink("A", buildTemp+"/Versions/Current"); err != nil {
 				return err
 			}
-			if err := symlink("Versions/Current/Headers", buildTemp+"/Headers"); err != nil {
+			if err := overrideSymlink("Versions/Current/Headers", buildTemp+"/Headers"); err != nil {
 				return err
 			}
-			if err := symlink("Versions/Current/"+title, buildTemp+"/"+title); err != nil {
+			if err := overrideSymlink("Versions/Current/"+title, buildTemp+"/"+title); err != nil {
 				return err
 			}
 
@@ -182,7 +197,7 @@ func goIOSBind(gobind string, pkgs []*packages.Package, archs []string) error {
 			if err := mkdir(resources); err != nil {
 				return err
 			}
-			if err := symlink("Versions/Current/Resources", buildTemp+"/Resources"); err != nil {
+			if err := overrideSymlink("Versions/Current/Resources", buildTemp+"/Resources"); err != nil {
 				return err
 			}
 			err = writeFile(buildTemp+"/Resources/Info.plist", func(w io.Writer) error {
@@ -206,7 +221,7 @@ func goIOSBind(gobind string, pkgs []*packages.Package, archs []string) error {
 			if err != nil {
 				return err
 			}
-			err = symlink("Versions/Current/Modules", buildTemp+"/Modules")
+			err = overrideSymlink("Versions/Current/Modules", buildTemp+"/Modules")
 			if err != nil {
 				return err
 			}
