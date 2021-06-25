@@ -295,7 +295,7 @@ func goCmd(subcmd string, srcs []string, env []string, args ...string) error {
 
 func goCmdAt(at string, subcmd string, srcs []string, env []string, args ...string) error {
 	cmd := exec.Command("go", subcmd)
-	//cmd := exec.Command("go1.16rc1", subcmd)
+	// cmd := exec.Command("go1.16rc1", subcmd)
 	tags := buildTags
 	targetOS, _, err := parseBuildTarget(buildTarget)
 	if err != nil {
@@ -303,6 +303,10 @@ func goCmdAt(at string, subcmd string, srcs []string, env []string, args ...stri
 	}
 	if targetOS == "darwin" {
 		tags = append(tags, "ios")
+	}
+	matched, err := regexp.Match(`-target x86_64-apple-.*-macabi`, []byte(getenv(env, "CGO_CFLAGS")))
+	if matched && err == nil {
+		tags = append(tags, "catalyst")
 	}
 	if len(tags) > 0 {
 		cmd.Args = append(cmd.Args, "-tags", strings.Join(tags, " "))
